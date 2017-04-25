@@ -3,16 +3,18 @@
     "url": "https://api.thingspeak.com/update.json",
     "requestType": "POST",
     "form": {
-		"api_key": "{{k}}",
-		"field1": "{{1}}",
-		"field2": "{{2}}",
-		"field3": "{{3}}",
-		"field4": "{{4}}",
-		"field5": "{{5}}",
-		"field6": "{{6}}",
-		"status": "{{s}}"
+    		"api_key": "{{k}}",
+    		"field1": "{{1}}",
+    		"field2": "{{2}}",
+    		"field3": "{{3}}",
+    		"field4": "{{4}}",
+    		"field5": "{{5}}",
+    		"field6": "{{6}}",
+    		"field7": "{{7}}",
+    		"field8": "{{8}}",
+    		"status": "{{s}}"
 	},
-    "mydevices": true,
+  "mydevices": true,
 	"noDefaults": true,
 	"deviceid": ""
 }

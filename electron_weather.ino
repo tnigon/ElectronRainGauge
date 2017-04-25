@@ -1,6 +1,7 @@
 // This #include statement was automatically added by the Particle IDE.
+#include <Adafruit_ADS1X15.h> // For soil moisture sensor
+#include <stdint.h> // For a 16-bit data type to measure full dynamic range of ADS output
 #include <Adafruit_DHT.h>
-#include "Adafruit_DHT/Adafruit_DHT.h"
 
 // ============================================================
 // Time
@@ -8,9 +9,9 @@
 // Initiate intervals to determine when to capture sensor
 // readings and publish data.
 // ============================================================
-unsigned int sensorCapturePeriod = (5*60); // units are seconds
-unsigned int publishPeriod = (30*60);  // units are seconds
-unsigned int sensorCount = 1;
+unsigned int sensorCapturePeriod = (2); // units are seconds
+unsigned int publishPeriod = (15);  // units are seconds
+unsigned int sensorCount = 1; // I believe this will give us 32 bits of dynamic range
 unsigned int publishCount = 1;
 time_t initialTime;
 time_t scheduledSensor;
@@ -36,6 +37,8 @@ String field3 = "";
 String field4 = "";
 String field5 = "";
 String field6 = "";
+String field7 = "";
+String field8 = "";
 String status = "";
 
 // ============================================================
@@ -45,21 +48,28 @@ String status = "";
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 int light_sensor_pin = A1;
-int RainPin = D2;
+const int RainPin = D2;
+const int anemometerPin = A2;
+const int led = D7;
+int ledState = LOW; // ledState used to set the LED
+unsigned long lastRainEvent = 0; // Use "unsigned long" for variables that hold time
+const long interval = 100; // interval at which to blink (milliseconds)
+Adafruit_ADS1115 ads1115;
 
 void setup() {
     // ============================================================
     // Time
     // ============================================================
-//    initialTime = Time.now() + (60 - Time.minute()) + (60 - Time.second());
-    if (Time.minute() >= 30) {
-        initialTime = Time.now() + ((59 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at top of the hour
-    }
-    if (Time.minute() < 30) {
-        initialTime = Time.now() + ((29 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at bottom of the hour
-    }
+    pinMode(led, OUTPUT);
+    initialTime = Time.now();
+//    if (Time.minute() >= 30) {
+//        initialTime = Time.now() + ((59 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at top of the hour
+//    }
+//    if (Time.minute() < 30) {
+//        initialTime = Time.now() + ((29 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at bottom of the hour
+//    }
     // Add code to insure initial time is at top of hour
-    scheduledSensor = initialTime + sensorCapturePeriod; // Schedule initial sensor reading and publish events
+    scheduledSensor = initialTime + (sensorCapturePeriod); // Schedule initial sensor reading and publish events
     scheduledPublish = initialTime + publishPeriod;
     Particle.publish("Initial system time is: ", hhmmss(Time.now()));
     Particle.publish("Data will begin being collected at: ", hhmmss(initialTime));
@@ -68,9 +78,17 @@ void setup() {
     // ============================================================
     dht.begin(); // Start DHT sensor
     initializeRainGauge();
+    initializeAnemometer();
+    ads1115.begin();  // Initialize ads1115
+    ads1115.setGain(GAIN_ONE); // 16x gain +/- 0.256V 1 bit = 0.125mV
+
 }
 
 void loop() {
+    // ============================================================
+    // Light
+    // ============================================================
+    blinkLight();
     // ============================================================
     // Sensors
     // ---
@@ -80,8 +98,9 @@ void loop() {
     if(Time.now() >= scheduledSensor) {
         captureTempHumidity();
         captureLight();
+        captureSoilMoisture();
         sensorCount++;
-        scheduledSensor = initialTime + (sensorCount*sensorCapturePeriod);
+        scheduledSensor = initialTime + ((sensorCount*sensorCapturePeriod));
     }
 
     // ============================================================
@@ -91,39 +110,70 @@ void loop() {
         float tempC = getAndResetTempC(); // Get the data to be published
         float humidityRH = getAndResetHumidityRH();
         float light = getAndResetLight();
+        float soilMoisture = getAndResetSoilMoisture();
         float rain_mm = getAndResetRain();
+        float gust;
+        float wind_mps = getAndResetAnemometer(&gust);
         FuelGauge fuel;
-        float voltage = fuel.getVCell(); // Battery voltage
+//        float voltage = fuel.getVCell(); // Battery voltage
         float bat_percent = fuel.getSoC(); // State of Charge from 0-100%
 
 //        Particle.publish("System clock is: ", hhmmss(Time.now()));
-//        publishToParticle(tempC,humidityRH,light,rain_mm);
-        publishToThingSpeak(tempC,humidityRH,light,rain_mm,voltage,bat_percent);
+//        publishToParticle(tempC,humidityRH,light,rain_mm,soilMoisture,wind_mps,gust);
+        publishToThingSpeak(tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,gust,bat_percent);
         publishCount++;
         scheduledPublish = initialTime + (publishCount*publishPeriod);
     }
     delay(10);
 }
 
-void publishToParticle(float tempC, float humidityRH, float light, float rain_mm) {
-    Particle.publish("Weather",
-                        String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.2f mm",
-                            tempC,humidityRH,light,rain_mm),60,PRIVATE);
+// ============================================================
+// Miscellaneous
+// ---
+// blinkLight() is used by the handleRainEvent() function to
+// illuminate the D7 LED every time the tipping bucket flips.
+// This function is necessary since we can't afford a delay as
+// that affects the entire loop for all the other parts of the
+// firmware.
+// ============================================================
+void blinkLight() {
+  unsigned long currentMillis = millis();
+
+    if (currentMillis - lastRainEvent < interval) {
+        ledState = HIGH;
+        digitalWrite(led, ledState);
+    }
+    if (currentMillis - lastRainEvent >= interval) {
+        // save the last time you blinked the LED
+//        previousMillis = currentMillis;
+
+        // if the LED is on, turn it off
+        if (ledState == HIGH) {
+            ledState = LOW;
+        }
+
+        digitalWrite(led, ledState);
+    }
 }
 
-void publishToThingSpeak(float tempC,float humidityRH,float light,float rain_mm,float voltage,float bat_percent) {
+void publishToParticle(float tempC, float humidityRH, float light, float soilMoisture, float rain_mm, float wind_mps, float gust) {
+    Particle.publish("Weather",
+                        String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.1f cbar, %0.2f mm, %0.1f mps, %0.1f mps",
+                            tempC,humidityRH,light,soilMoisture,rain_mm),60,PRIVATE);
+}
+
+void publishToThingSpeak(float tempC,float humidityRH,float light,float soilMoisture,float rain_mm,float wind_mps,float gust, float bat_percent) {
     field1 = String(tempC,2);
     field2 = String(humidityRH,2);
     field3 = String(light,2);
-    field4 = String(rain_mm,2);
-    field5 = String(voltage,2);
-    field6 = String(bat_percent,2);
-//    field5 = String(windMPH,1);
-//    field6 = String(gustMPH,1);
-//    field7 = String(windDegrees, 0);
+    field4 = String(soilMoisture,2);
+    field5 = String(rain_mm,2);
+    field6 = String(wind_mps,2);
+    field7 = String(gust,2);
+    field8 = String(bat_percent,2);
 
     String TSjson;
-    createTSjson(TSjson);
+    createThinkSpeakjson(TSjson);
     Particle.publish("webhook_electron",TSjson,60,PRIVATE);
     // Note: In order to publish a private event, you must pass all four parameters.
 }
@@ -133,17 +183,17 @@ void publishToThingSpeak(float tempC,float humidityRH,float light,float rain_mm,
 // ============================================================
 
 // ============================================================
-// Temperature, Humidity, and Light
+// Temperature, Humidity, Light, and Soil Matric Tension
 // ---
-// Temperature, humidity, and light sensors are read in the
-// main loop, keeping track of the summed value of all
-// measurements and measurement count; results are then
-// determined by dividing to get the average for that publish
-// cycle.
+// Temperature, humidity, light, and soil matric tension
+// sensors are read in the main loop, keeping track of the
+// summed value of all measurements and measurement count;
+// results are then determined by dividing to get the average
+// for that publish cycle.
 // ============================================================
-float tempC;
-float humidityRH;
-float light_measurement;
+float tempC_read;
+float humidityRH_read;
+float light_read;
 float humidityRHTotal = 0.0;
 unsigned int humidityRHReadingCount = 0;
 float tempCTotal = 0.0;
@@ -151,28 +201,39 @@ unsigned int tempCReadingCount = 0;
 float lightTotal = 0.0;
 unsigned int lightReadingCount = 0;
 
+int16_t soilMoisture_read; // 16-bit variable for ADS output at channel #3
+float soilMoistureTotal;
+unsigned int soilMoistureReadingCount;
+
 void captureTempHumidity() {
-    humidityRH = dht.getHumidity();
+    humidityRH_read = dht.getHumidity();
     // Check that result is reasonable
-    if(humidityRH > 0 && humidityRH < 105) // Supersaturation could cause humidity > 100%
+    if(humidityRH_read > 0 && humidityRH_read < 105) // Supersaturation could cause humidity > 100%
     {
-        humidityRHTotal += humidityRH; // Add measurement to running summed value
+        humidityRHTotal += humidityRH_read; // Add measurement to running summed value
         humidityRHReadingCount++; // Increment measurement count
     }
 
-    tempC = dht.getTempCelcius();
-    if(tempC > -60 && tempC < 70)
+    tempC_read = dht.getTempCelcius();
+    if(tempC_read > -60 && tempC_read < 70)
     {
-        tempCTotal += tempC;
+        tempCTotal += tempC_read;
         tempCReadingCount++;
     }
     return;
 }
 
 void captureLight() {
-    light_measurement = analogRead(light_sensor_pin);
-    lightTotal += light_measurement;
+    light_read = analogRead(light_sensor_pin);
+    lightTotal += light_read;
     lightReadingCount++;
+}
+
+void captureSoilMoisture() {
+//    adc3 = ((0.0831*(ads1115.readADC_SingleEnded(3)))-0.3188); // Convert voltage signal (mV) from A3 input on ADS1115 to the matric tension (cbar)
+    soilMoisture_read = (ads1115.readADC_SingleEnded(3)/float(10)); // Capture raw ADC reading
+    soilMoistureTotal += soilMoisture_read;
+    soilMoistureReadingCount++;
 }
 
 float getAndResetTempC()
@@ -208,6 +269,16 @@ float getAndResetLight()
     return result;
 }
 
+float getAndResetSoilMoisture() {
+    if(soilMoistureReadingCount == 0) {
+        return -1;
+    }
+    // To convert voltage signal (mV) from A3 input on ADS1115 to the matric tension (cbar): y = 0.0831x * -0.3188
+    float result = ((0.0831*(float(soilMoistureTotal)/float(soilMoistureReadingCount)))-0.3188);
+    soilMoistureTotal = 0.0;
+    soilMoistureReadingCount = 0;
+    return result;
+}
 // ============================================================
 // Rain
 // ---
@@ -217,9 +288,9 @@ float getAndResetLight()
 // LED illuminates], we want to count.
 // ============================================================
 volatile unsigned int rainEventCount; // volatile becuase it is part of an interrupt
-unsigned int lastRainEvent;
-unsigned int timeRainEvent;
-float RainScale_mm = 1.0; // Each pulse is 1.41 mm of rain
+//unsigned int lastRainEvent;
+unsigned long timeRainEvent;
+float RainScale_mm = 0.25; // Each pulse is 0.25 mm of rain
 
 void initializeRainGauge() {
     pinMode(RainPin, INPUT); // INPUT_PULLUP provides a "digital resistor" between signal and ground
@@ -234,6 +305,7 @@ void handleRainEvent() {
     // wait a period of time before recording data again
     timeRainEvent = millis(); // grab current time
     if(timeRainEvent - lastRainEvent > 300) {
+        blinkLight();
         rainEventCount++;
         lastRainEvent = timeRainEvent;
     }
@@ -254,20 +326,19 @@ float getAndResetRain() {
 // windspeed is recored.
 // ============================================================
 
-int AnemometerPin = D3;
-float AnemometerScaleMPH = 1.492; // Windspeed if we got a pulse every second (i.e. 1Hz)
-volatile unsigned int AnemoneterPeriodTotal = 0;
-volatile unsigned int AnemoneterPeriodReadingCount = 0;
+float Anemometer_m_per_sec = 0.6667; // Windspeed if we got a pulse every second (i.e. 1Hz)
+volatile unsigned int anemoneterTotal = 0;
+volatile unsigned int anemoneterCount = 0;
 volatile unsigned int GustPeriod = UINT_MAX;
 unsigned int lastAnemoneterEvent = 0;
 
 void initializeAnemometer() {
-    pinMode(AnemometerPin, INPUT_PULLUP);
-    AnemoneterPeriodTotal = 0;
-    AnemoneterPeriodReadingCount = 0;
+    pinMode(anemometerPin, INPUT_PULLUP);
+    anemoneterTotal = 0;
+    anemoneterCount = 0;
     GustPeriod = UINT_MAX;  //  The shortest period (and therefore fastest gust) observed
     lastAnemoneterEvent = 0;
-    attachInterrupt(AnemometerPin, handleAnemometerEvent, FALLING);
+    attachInterrupt(anemometerPin, handleAnemometerEvent, FALLING);
     return;
 }
 
@@ -275,38 +346,35 @@ void handleAnemometerEvent() {
     // Activated by the magnet in the anemometer (2 ticks per rotation), attached to input D3
     unsigned int timeAnemometerEvent = millis(); // grab current time
 
-    //If there's never been an event before (first time through), then just capture it
     if(lastAnemoneterEvent != 0) {
-        // Calculate time since last event
-        unsigned int period = timeAnemometerEvent - lastAnemoneterEvent;
+        unsigned int period = timeAnemometerEvent - lastAnemoneterEvent; // Calculate time since last event
         // ignore switch-bounce glitches less than 10mS after initial edge (which implies a max windspeed of 149mph)
         if(period < 10) {
             return;
         }
         if(period < GustPeriod) {
-            // If the period is the shortest (and therefore fastest windspeed) seen, capture it
-            GustPeriod = period;
+            GustPeriod = period; // Shortest period equates to fastest windspeed --> record it
         }
-        AnemoneterPeriodTotal += period;
-        AnemoneterPeriodReadingCount++;
+        anemoneterTotal += period;
+        anemoneterCount++;
     }
     lastAnemoneterEvent = timeAnemometerEvent; // set up for next event
 }
 
-float getAndResetAnemometerMPH(float * gustMPH)
+float getAndResetAnemometer(float * gust)
 {
-    if(AnemoneterPeriodReadingCount == 0)
+    if(anemoneterCount == 0)
     {
-        *gustMPH = 0.0;
+        *gust = 0.0;
         return 0;
     }
     // Nonintuitive math:  We've collected the sum of the observed periods between pulses, and the number of observations.
-    // Now, we calculate the average period (sum / number of readings), take the inverse and muliple by 1000 to give frequency, and then mulitply by our scale to get MPH.
+    // Now, we calculate the average period (sum / number of readings), take the inverse and muliple by 1000 to give frequency, and then mulitply by our scale to get appropriate units.
     // The math below is transformed to maximize accuracy by doing all muliplications BEFORE dividing.
-    float result = AnemometerScaleMPH * 1000.0 * float(AnemoneterPeriodReadingCount) / float(AnemoneterPeriodTotal);
-    AnemoneterPeriodTotal = 0;
-    AnemoneterPeriodReadingCount = 0;
-    *gustMPH = AnemometerScaleMPH  * 1000.0 / float(GustPeriod);
+    float result = Anemometer_m_per_sec * 1000.0 * float(anemoneterCount) / float(anemoneterTotal);
+    anemoneterTotal = 0;
+    anemoneterCount = 0;
+    *gust = Anemometer_m_per_sec  * 1000.0 / float(GustPeriod);
     GustPeriod = UINT_MAX;
     return result;
 }
@@ -387,7 +455,7 @@ float lookupRadiansFromRaw(unsigned int analogRaw)
 // Example format:
 // dest = "{ \"k\":\"" + api_key + "\", \"1\":\""+ field1 ...
 // ============================================================
-void createTSjson(String &dest) {
+void createThinkSpeakjson(String &dest) {
   // dest = "{ \"k\":\"" + api_key + "\", \"1\":\""+ field1 +"\", \"2\":\""+ field2 +"\",\"3\":\""+ field3 +"\",\"4\":\""+ field4 +"\",\"5\":\""+ field5 +"\",\"6\":\""+ field6 +"\",\"7\":\""+ field7 +"\",\"8\":\""+ field8 +"\",\"a\":\""+ lat +"\",\"o\":\""+ lon +"\",\"e\":\""+ el +"\", \"s\":\""+ status +"\"}";
     dest = "{";
 
@@ -413,6 +481,14 @@ void createTSjson(String &dest) {
 
     if(field6.length()>0){
         dest = dest + "\"6\":\""+ field6 +"\",";
+    }
+
+    if(field7.length()>0){
+        dest = dest + "\"7\":\""+ field7 +"\",";
+    }
+
+    if(field8.length()>0){
+        dest = dest + "\"8\":\""+ field8 +"\",";
     }
 
     if(status.length()>0){
