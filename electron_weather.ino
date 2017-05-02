@@ -9,8 +9,8 @@
 // Initiate intervals to determine when to capture sensor
 // readings and publish data.
 // ============================================================
-unsigned int sensorCapturePeriod = (2); // units are seconds
-unsigned int publishPeriod = (15);  // units are seconds
+unsigned int sensorCapturePeriod = (10); // units are seconds
+unsigned int publishPeriod = (30*60);  // units are seconds
 unsigned int sensorCount = 1; // I believe this will give us 32 bits of dynamic range
 unsigned int publishCount = 1;
 time_t initialTime;
@@ -61,24 +61,23 @@ void setup() {
     // Time
     // ============================================================
     pinMode(led, OUTPUT);
-    initialTime = Time.now();
-//    if (Time.minute() >= 30) {
-//        initialTime = Time.now() + ((59 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at top of the hour
-//    }
-//    if (Time.minute() < 30) {
-//        initialTime = Time.now() + ((29 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at bottom of the hour
-//    }
-    // Add code to insure initial time is at top of hour
-    scheduledSensor = initialTime + (sensorCapturePeriod); // Schedule initial sensor reading and publish events
+//    initialTime = Time.now();
+    if (Time.minute() >= 30) {
+        initialTime = Time.now() + ((59 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at top of the hour
+    }
+    if (Time.minute() < 30) {
+        initialTime = Time.now() + ((29 - Time.minute())*60) + (60 - Time.second()); // Insures initial time will be at bottom of the hour
+    }
+    scheduledSensor = initialTime + sensorCapturePeriod; // Schedule initial sensor reading and publish events
     scheduledPublish = initialTime + publishPeriod;
     Particle.publish("Initial system time is: ", hhmmss(Time.now()));
     Particle.publish("Data will begin being collected at: ", hhmmss(initialTime));
+
     // ============================================================
     // Sensors
     // ============================================================
     dht.begin(); // Start DHT sensor
     initializeRainGauge();
-    initializeAnemometer();
     ads1115.begin();  // Initialize ads1115
     ads1115.setGain(GAIN_ONE); // 16x gain +/- 0.256V 1 bit = 0.125mV
 
@@ -88,7 +87,7 @@ void loop() {
     // ============================================================
     // Light
     // ============================================================
-    blinkLight();
+    blinkLight(); // To initialize currentMillis variable
     // ============================================================
     // Sensors
     // ---
@@ -99,8 +98,9 @@ void loop() {
         captureTempHumidity();
         captureLight();
         captureSoilMoisture();
+        captureWind();
         sensorCount++;
-        scheduledSensor = initialTime + ((sensorCount*sensorCapturePeriod));
+        scheduledSensor = initialTime + (sensorCount*sensorCapturePeriod);
     }
 
     // ============================================================
@@ -112,15 +112,16 @@ void loop() {
         float light = getAndResetLight();
         float soilMoisture = getAndResetSoilMoisture();
         float rain_mm = getAndResetRain();
-        float gust;
-        float wind_mps = getAndResetAnemometer(&gust);
+        float wind_mps;
+        float wind_gust;
+        getAndResetAnemometer(&wind_mps, &wind_gust);
+//        float wind_direction = getAndResetWindVaneDegrees(); // Comment out and add variable to publish...() functions if you have a wind vane connected
         FuelGauge fuel;
-//        float voltage = fuel.getVCell(); // Battery voltage
+        float voltage = fuel.getVCell(); // Battery voltage
         float bat_percent = fuel.getSoC(); // State of Charge from 0-100%
-
 //        Particle.publish("System clock is: ", hhmmss(Time.now()));
-//        publishToParticle(tempC,humidityRH,light,rain_mm,soilMoisture,wind_mps,gust);
-        publishToThingSpeak(tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,gust,bat_percent);
+//        publishToParticle(tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,wind_gust); // Comment out if you don't want to publish to particle.io
+        publishToThingSpeak(tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,wind_gust,bat_percent); // Comment out if you don't want to publish to ThinkSpeak
         publishCount++;
         scheduledPublish = initialTime + (publishCount*publishPeriod);
     }
@@ -138,38 +139,34 @@ void loop() {
 // ============================================================
 void blinkLight() {
   unsigned long currentMillis = millis();
-
+  
     if (currentMillis - lastRainEvent < interval) {
         ledState = HIGH;
         digitalWrite(led, ledState);
     }
     if (currentMillis - lastRainEvent >= interval) {
-        // save the last time you blinked the LED
-//        previousMillis = currentMillis;
-
         // if the LED is on, turn it off
         if (ledState == HIGH) {
             ledState = LOW;
         }
-
         digitalWrite(led, ledState);
     }
 }
 
-void publishToParticle(float tempC, float humidityRH, float light, float soilMoisture, float rain_mm, float wind_mps, float gust) {
+void publishToParticle(float tempC, float humidityRH, float light, float soilMoisture, float rain_mm, float wind_mps, float wind_gust) {
     Particle.publish("Weather",
-                        String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.1f cbar, %0.2f mm, %0.1f mps, %0.1f mps",
-                            tempC,humidityRH,light,soilMoisture,rain_mm),60,PRIVATE);
+                        String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.1f cbar, %0.2f mm, %0.1f mps, %0.1f mps", 
+                            tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,wind_gust),60,PRIVATE);
 }
 
-void publishToThingSpeak(float tempC,float humidityRH,float light,float soilMoisture,float rain_mm,float wind_mps,float gust, float bat_percent) {
+void publishToThingSpeak(float tempC,float humidityRH,float light,float soilMoisture,float rain_mm,float wind_mps,float wind_gust,float bat_percent) {
     field1 = String(tempC,2);
     field2 = String(humidityRH,2);
     field3 = String(light,2);
     field4 = String(soilMoisture,2);
     field5 = String(rain_mm,2);
     field6 = String(wind_mps,2);
-    field7 = String(gust,2);
+    field7 = String(wind_gust,2);
     field8 = String(bat_percent,2);
 
     String TSjson;
@@ -230,7 +227,6 @@ void captureLight() {
 }
 
 void captureSoilMoisture() {
-//    adc3 = ((0.0831*(ads1115.readADC_SingleEnded(3)))-0.3188); // Convert voltage signal (mV) from A3 input on ADS1115 to the matric tension (cbar)
     soilMoisture_read = (ads1115.readADC_SingleEnded(3)/float(10)); // Capture raw ADC reading
     soilMoistureTotal += soilMoisture_read;
     soilMoistureReadingCount++;
@@ -263,7 +259,7 @@ float getAndResetLight()
     if(lightReadingCount == 0) {
         return -1;
     }
-    float result = (1-(float(lightTotal)/(4096*float(lightReadingCount))))*100;
+    float result = (1-(float(lightTotal)/(2048*float(lightReadingCount))))*100;  //This was originally 4096, but I noticed light levels never got below 50%
     lightTotal = 0.0;
     lightReadingCount = 0;
     return result;
@@ -288,7 +284,6 @@ float getAndResetSoilMoisture() {
 // LED illuminates], we want to count.
 // ============================================================
 volatile unsigned int rainEventCount; // volatile becuase it is part of an interrupt
-//unsigned int lastRainEvent;
 unsigned long timeRainEvent;
 float RainScale_mm = 0.25; // Each pulse is 0.25 mm of rain
 
@@ -320,63 +315,53 @@ float getAndResetRain() {
 // ============================================================
 // Wind Speed (Anemometer)
 // ---
-// The Anemometer generates a frequency relative to the
-// windspeed: 1Hz: 1.492MPH, 2Hz: 2.984MPH, etc. The average
-// time elaspsed between pulses is measured, then average
-// windspeed is recored.
+// The Anemometer generates a voltage relative to the
+// windspeed: 400mV = 0 m/s wind speed; 2000mV = 32.4 m/s wind
+// speed. Voltage output is read in the main loop, keeping
+// track of the summed value of all measurements and
+// measurement count; results are then determined by dividing
+// to get the average for that publish cycle.
 // ============================================================
+int wind_read; // Stores the value direct from the analog pin
+float windTotal = 0;
+unsigned int windReadingCount = 0;
+float sensorVoltage = 0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
+float voltageNow = 0; // Temporary voltage reading for this instance
+float gustVoltage = 0;
+// NOTE: double check to see that the conversion is the same for you anemometer/microcontroller (e.g., mine read 487 while stagnant; 0.4/487 = 0.0008213552361)
+float voltageConversionConstant = 0.0008213552361; // Constant that maps the value provided by the analog read function to actual voltage
+int sensorDelay = 2000; //Delay between sensor readings, measured in milliseconds (ms)
 
-float Anemometer_m_per_sec = 0.6667; // Windspeed if we got a pulse every second (i.e. 1Hz)
-volatile unsigned int anemoneterTotal = 0;
-volatile unsigned int anemoneterCount = 0;
-volatile unsigned int GustPeriod = UINT_MAX;
-unsigned int lastAnemoneterEvent = 0;
+// Technical variables (for the anemometer sold by Adafruit; can be modified for other anemometers):
+float voltageMin = .4; // Mininum output voltage from anemometer (V); (this is where wind speed = 0)
+float voltageMax = 2.0; // Maximum output voltage from anemometer (V)
+float windSpeedMax = 32.4; // Wind speed (m/s) corresponding to maximum voltage
 
-void initializeAnemometer() {
-    pinMode(anemometerPin, INPUT_PULLUP);
-    anemoneterTotal = 0;
-    anemoneterCount = 0;
-    GustPeriod = UINT_MAX;  //  The shortest period (and therefore fastest gust) observed
-    lastAnemoneterEvent = 0;
-    attachInterrupt(anemometerPin, handleAnemometerEvent, FALLING);
-    return;
-}
-
-void handleAnemometerEvent() {
-    // Activated by the magnet in the anemometer (2 ticks per rotation), attached to input D3
-    unsigned int timeAnemometerEvent = millis(); // grab current time
-
-    if(lastAnemoneterEvent != 0) {
-        unsigned int period = timeAnemometerEvent - lastAnemoneterEvent; // Calculate time since last event
-        // ignore switch-bounce glitches less than 10mS after initial edge (which implies a max windspeed of 149mph)
-        if(period < 10) {
-            return;
-        }
-        if(period < GustPeriod) {
-            GustPeriod = period; // Shortest period equates to fastest windspeed --> record it
-        }
-        anemoneterTotal += period;
-        anemoneterCount++;
+void captureWind(){
+    wind_read = analogRead(anemometerPin); // Get an integer from the analog pin connected to the anemometer
+    sensorVoltage = wind_read * voltageConversionConstant; // Convert sensor value to actual voltage
+    if (sensorVoltage < voltageMin) { 
+        sensorVoltage = voltageMin; //Check if voltage is below minimum value. If so, set to minimum
     }
-    lastAnemoneterEvent = timeAnemometerEvent; // set up for next event
+    windTotal += sensorVoltage;
+    windReadingCount++;
+    // Max wind speed calculation
+    voltageNow = sensorVoltage;
+    if (voltageNow >= gustVoltage) {
+    gustVoltage = voltageNow;
+    }
 }
 
-float getAndResetAnemometer(float * gust)
+float getAndResetAnemometer(float *wind_mps, float *wind_gust)
 {
-    if(anemoneterCount == 0)
-    {
-        *gust = 0.0;
-        return 0;
+    if(windReadingCount == 0) {
+        return -1;
     }
-    // Nonintuitive math:  We've collected the sum of the observed periods between pulses, and the number of observations.
-    // Now, we calculate the average period (sum / number of readings), take the inverse and muliple by 1000 to give frequency, and then mulitply by our scale to get appropriate units.
-    // The math below is transformed to maximize accuracy by doing all muliplications BEFORE dividing.
-    float result = Anemometer_m_per_sec * 1000.0 * float(anemoneterCount) / float(anemoneterTotal);
-    anemoneterTotal = 0;
-    anemoneterCount = 0;
-    *gust = Anemometer_m_per_sec  * 1000.0 / float(GustPeriod);
-    GustPeriod = UINT_MAX;
-    return result;
+    *wind_mps = (((windTotal/windReadingCount)-voltageMin)*windSpeedMax / (voltageMax-voltageMin)); //For voltages above minimum value, use the linear relationship to calculate wind speed.
+    *wind_gust = ((gustVoltage-voltageMin)*windSpeedMax / (voltageMax-voltageMin));
+    windTotal = 0.0;
+    windReadingCount = 0;
+    gustVoltage = 0;
 }
 
 // ============================================================
