@@ -1,0 +1,27 @@
+{
+    "deviceID": "470031001951353338363036",
+    "event": "webhook_wunderground_rain",
+    "mydevices": true,
+    "integration_type": "Webhook",
+    "url": "http://rtupdate.wunderground.com/weatherstation/updateweatherstation.php",
+    "requestType": "GET",
+    "query": {
+		"rtfreq": "5",
+		"realtime": "1",
+		"action": "updateraw",
+		"ID": "{{id}}",
+		"PASSWORD": "{{pw}}",
+		"dateutc": "{{t}}",
+		"tempf": "{{1}}",
+		"humidity": "{{2}}",
+		"windspeedmph": "{{3}}",
+		"windgustmph": "{{4}}",
+		"rainin": "{{5}}",
+		"dailyrainin": "{{6}}",
+		"softwaretype": "Particle-Electron"
+    },
+    "noDefaults": true,
+    "rejectUnauthorized": false,
+    "responseTopic": "hook/wu/success",
+    "errorResponseTopic": "hook/wu/error"
+}
