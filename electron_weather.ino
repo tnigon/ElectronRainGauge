@@ -89,8 +89,8 @@ void writeHeader() {
 // Publish
 // ============================================================
 // Initialize variables to publish to ThingSpeak
-unsigned long thingspeakChannelNumber = 256869;
-String api_key = "IXQ6TIDEQ72QBH8A"; // ThingSpeak Write API Key.
+unsigned long thingspeakChannelNumber = <######>;
+String api_key = "<key>"; // ThingSpeak Write API Key.
 String tempc = "";  // for now fields are null
 String humidity_ts = "";  // will be filled by publishToThingSpeak()
 String lightrel = "";
@@ -102,8 +102,8 @@ String volts = "";
 String status = "";
 
 // Initialize variables to publish to Weather Underground
-String wu_stationID = "KWIGREEN83"; // From WUnderground account
-String wu_password = "co5iqw19";
+String wu_stationID = "<ABCDEFGH##>"; // From WUnderground account
+String wu_password = "<pw>";
 String dateutc = "";  // will be filled by publishToWUnderground()
 String tempf = "";
 String humidity_wu = "";
