@@ -1,5 +1,5 @@
 {
-    "deviceID": "470031001951353338363036",
+    "deviceID": "add_device_id",
     "event": "webhook_wunderground_rain",
     "mydevices": true,
     "integration_type": "Webhook",
