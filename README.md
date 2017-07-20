@@ -1,4 +1,5 @@
 # ElectronRainGauge
+[![DOI](https://zenodo.org/badge/87865768.svg)](https://zenodo.org/badge/latestdoi/87865768)
 
 ## Summary
 This repository contains the files that I used to create a "cloud-connected" weather station via the [Particle Electron](https://store.particle.io/collections/electron). Please see [my how-to guide](http://tylernigon.me/projects/weather_station.html) describing the steps I took.
