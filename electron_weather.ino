@@ -24,7 +24,7 @@ unsigned int isDST = 1; // Change to 0 if not observing daylight savings time
 int gmt_timeZone = -6; // Change to appropriate time zone for your device
 unsigned int sensorCapturePeriod = (5); // units are seconds
 unsigned int publishPeriod = (60 * 30);  // units are seconds
-unsigned int sensorCount = 1; // I believe this will give us 32 bits of dynamic range
+unsigned int sensorCount = 1; // this provides 32 bits of dynamic range
 unsigned int publishCount = 1;
 time_t initialTime;
 time_t endOfDay;
@@ -71,18 +71,6 @@ void writeHeader() {
     Serial.print("wind_mps, ");
     Serial.print("wind_gust, ");
     Serial.println("bat_percent");
-    // file.print(F("timestampUTC, "));
-    // file.print(F("yyyy-mm-dd, "));
-    // file.print(F("hh:mm:ss, "));
-    // file.print(F("tempC, "));
-    // file.print(F("humidityRH, "));
-    // file.print(F("light, "));
-    // file.print(F("soilMoisture, "));
-    // file.print(F("rain_mm, "));
-    // file.print(F("wind_mps, "));
-    // file.print(F("wind_gust, "));
-    // file.print(F("bat_percent"));
-    // file.println();
 }
 
 // ============================================================
@@ -91,14 +79,14 @@ void writeHeader() {
 // Initialize variables to publish to ThingSpeak
 unsigned long thingspeakChannelNumber = <######>;
 String api_key = "<key>"; // ThingSpeak Write API Key.
-String tempc = "";  // for now fields are null
-String humidity_ts = "";  // will be filled by publishToThingSpeak()
-String lightrel = "";
-String soilmoisture = "";
-String dailyrainmm = "";
-String windspeedmps = "";
-String windgustmps = "";
-String volts = "";
+String field1 = "";  // for now fields are null
+String field2 = "";  // will be filled by publishToThingSpeak()
+String field3 = "";
+String field4 = "";
+String field5 = "";
+String field6 = "";
+String field7 = "";
+String field8 = "";
 String status = "";
 
 // Initialize variables to publish to Weather Underground
@@ -106,7 +94,7 @@ String wu_stationID = "<ABCDEFGH##>"; // From WUnderground account
 String wu_password = "<pw>";
 String dateutc = "";  // will be filled by publishToWUnderground()
 String tempf = "";
-String humidity_wu = "";
+String humidity = "";
 String rainin = "";
 String dailyrainin = "";
 String windspeedmph = "";
@@ -135,27 +123,43 @@ void setup() {
     // initialTime = Time.now();
     time_t benchTime = Time.now(); // So all times are consistently calculated (it could presumably take several seconds to get through all code in which case times will be misaligned)
     if (Time.minute() >= 30) {
-        initialTime = benchTime + ((59 - Time.minute(benchTime))*60) + (60 - Time.second(benchTime)); // Ensures initial time will be at top of the hour
+        initialTime = benchTime + ((59 - Time.minute(benchTime))*60) + (60 - Time.second(benchTime)); // ensures initial time will be at top of the hour
         if (isDST == 1) {
-            endOfDay = initialTime + ((23 - Time.hour(benchTime))*60*60) - ((gmt_timeZone+offsetDST)*60*60) - 48; // To know when to reset daily rain
+            endOfDay = initialTime + ((23 - Time.hour(benchTime))*60*60) - ((gmt_timeZone+offsetDST)*60*60) - 48; // to know when to reset daily rain
         }
         else {
             endOfDay = initialTime + ((23 - Time.hour(benchTime))*60*60) - (gmt_timeZone*60*60) - 48; // I have no idea where the extra 48 seconds is coming from, but seems to be coming from..
         }
     }
     if (Time.minute() < 30) {
-        initialTime = benchTime + ((29 - Time.minute(benchTime))*60) + (60 - Time.second(benchTime)); // Ensures initial time will be at bottom of the hour
+        initialTime = benchTime + ((29 - Time.minute(benchTime))*60) + (60 - Time.second(benchTime)); // ensures initial time will be at bottom of the hour
         if (isDST == 1) {
-            endOfDay = initialTime + 30 + ((23 - Time.hour(benchTime))*60*60) - ((gmt_timeZone+offsetDST)*60*60) - 48; // To know when to reset daily rain
+            endOfDay = initialTime + 30 + ((23 - Time.hour(benchTime))*60*60) - ((gmt_timeZone+offsetDST)*60*60) - 48; // to know when to reset daily rain
         }
         else {
             endOfDay = initialTime + 30 + ((23 - Time.hour(benchTime))*60*60) - (gmt_timeZone*60*60) - 48;
         }
     }
-    scheduledSensor = initialTime + sensorCapturePeriod; // Schedule initial sensor reading and publish events
-    scheduledPublish = initialTime + publishPeriod;
+
+    // ============================================================
+    // The following lines will have first publish <at> first top
+    // or bottom of the hour
+    // ============================================================
     Particle.publish("Initial system time is: ", hhmmss(benchTime));
-    Particle.publish("Data will begin being collected at: ", hhmmss(initialTime));
+    scheduledSensor = benchTime + sensorCapturePeriod; // ** schedule initial sensor reading immediately
+    scheduledPublish = initialTime; // ** schedule first publish at first top (or bottom) of the hour
+    Particle.publish("Data will begin being collected at: ", hhmmss(benchTime + sensorCapturePeriod));
+    Particle.publish("Data will first be published at: ", hhmmss(scheduledPublish));
+
+    // ============================================================
+    // The following lines will have first publish <after> first
+    // top or bottom of the hour
+    // ============================================================
+    // scheduledSensor = initialTime + sensorCapturePeriod; // begin sensor readings after top (or bottom) of the hour
+    // scheduledPublish = initialTime + publishPeriod; // schedule first publish after first top (or bottom) of the hour
+    // Particle.publish("Data will begin being collected at: ", hhmmss(initialTime));
+    // Particle.publish("Data will first be published at: ", hhmmss(scheduledPublish));
+
     Particle.publish("GMT Time zone is: ", gmt_timeZone);
     if (isDST == 1) {
         Particle.publish("Daylight savings time: ", String("True"));
@@ -266,12 +270,12 @@ void loop() {
         // publishToParticle(tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,wind_gust); // Comment out if you don't want to publish to particle.io
         publishToThingSpeak(tempC,humidityRH,light,soilMoisture,rainToday_mm,wind_mps,wind_gust,voltage); // Comment out if you don't want to publish to ThinkSpeak
         // Comment out if you don't want to publish to Weather Underground
-        if (rainToday_mm == 0.0) { // Do not publish rain data unless it has rained today
-            publishToWUndergroundNoRain(temp_f,humidityRH,wind_mph,windGust_mph);
-        }
-        else { // If it rained today, publish rainfall data for the rest of the day
-            publishToWUndergroundRain(temp_f,humidityRH,wind_mph,windGust_mph,rain_in,rainToday_in);
-        }
+        // if (rainToday_mm == 0.0) { // Do not publish rain data unless it has rained today
+        //     publishToWUndergroundNoRain(temp_f,humidityRH,wind_mph,windGust_mph);
+        // }
+        // else { // If it rained today, publish rainfall data for the rest of the day
+        //     publishToWUndergroundRain(temp_f,humidityRH,wind_mph,windGust_mph,rain_in,rainToday_in);
+        // }
         // logToSD(scheduledPublish,tempC,humidityRH,dewPointC,light,soilMoisture,rain_mm,wind_mps,wind_gust,bat_percent);
 
         if (scheduledPublish + 10 > endOfDay) { // Reset accumulated rain and schedule next reset in 24 hours
@@ -513,10 +517,14 @@ float getAndResetRain() {
 // ---
 // The Anemometer generates a voltage relative to the
 // windspeed: 400mV = 0 m/s wind speed; 2000mV = 32.4 m/s wind
-// speed. Voltage output is read in the main loop, keeping
-// track of the summed value of all measurements and
+// speed. A 12-bit DN (0-4096) is read in the main loop,
+// keeping track of the summed value of all measurements and
 // measurement count; results are then determined by dividing
 // to get the average for that publish cycle.
+// To convert DN to voltage:
+// voltage = (DN * 3.3 * conversionConstant) / 4095
+// * where conversionConstant is a multiplier derived from the
+//   ratio between measured voltage and Electron output voltage
 // ============================================================
 int wind_read; // Stores the value direct from the analog pin
 float windTotal = 0;
@@ -524,18 +532,21 @@ unsigned int windReadingCount = 0;
 float sensorVoltage = 0; //Variable that stores the voltage (in Volts) from the anemometer being sent to the analog pin
 float voltageNow = 0; // Temporary voltage reading for this instance
 float gustVoltage = 0;
-// NOTE: double check to see that the conversion is the same for you anemometer/microcontroller (e.g., mine read 487 while stagnant; 0.4/487 = 0.0008213552361)
-float voltageConversionConstant = 0.0008213552361; // Constant that maps the value provided by the analog read function to actual voltage
+// NOTE: double check to see that the conversion is the same for you anemometer/microcontroller
+// (e.g., mine averaged 463.59 while stagnant; 0.4 / ((463.59 * 3.3)/4095) = 1.0706953048246)
+// float voltageConversionConstant = 1.0706953048246; // Constant accounting for difference in measured and output voltage
 int sensorDelay = 2000; //Delay between sensor readings, measured in milliseconds (ms)
 
 // Technical variables (for the anemometer sold by Adafruit; can be modified for other anemometers):
 float voltageMin = .4; // Mininum output voltage from anemometer (V); (this is where wind speed = 0)
 float voltageMax = 2.0; // Maximum output voltage from anemometer (V)
-float windSpeedMax = 32.4; // Wind speed (m/s) corresponding to maximum voltage
+float windSpeedMax = 70; // Wind speed (m/s) corresponding to maximum voltage
+// float windSpeedMax = 32.4; // Wind speed (m/s) corresponding to maximum voltage
 
 void captureWind(){
-    wind_read = analogRead(anemometerPin); // Get an integer from the analog pin connected to the anemometer
-    sensorVoltage = wind_read * voltageConversionConstant; // Convert sensor value to actual voltage
+    wind_read = analogRead(anemometerPin); // Get 12-bit integer from the analog pin connected to the anemometer
+    sensorVoltage = (wind_read * 3.3) / 4095; // Convert sensor value to actual voltage
+    // sensorVoltage = (wind_read * 3.3 * voltageConversionConstant) / 4095; // Convert sensor value to actual voltage
     if (sensorVoltage < voltageMin) {
         sensorVoltage = voltageMin; //Check if voltage is below minimum value. If so, set to minimum
     }
@@ -641,15 +652,15 @@ void publishToParticle(float tempC, float humidityRH, float light, float soilMoi
                             tempC,humidityRH,light,soilMoisture,rain_mm,wind_mps,wind_gust),60,PRIVATE);
 }
 
-void publishToThingSpeak(float tempC,float humidityRH,float light,float soilMoisture,float rainToday_mm,float wind_mps,float wind_gust,float voltage) {
-    tempc = String(tempC,2);
-    humidity_ts = String(humidityRH,2);
-    lightrel = String(light,2);
-    soilmoisture = String(soilMoisture,2);
-    dailyrainmm = String(rainToday_mm,2);
-    windspeedmps = String(wind_mps,2);
-    windgustmps = String(wind_gust,2);
-    volts = String(voltage,2);
+void publishToThingSpeak(float tempC,float humidityRH,float light,float soilMoisture,float rainToday_mm,float wind_mps,float wind_gust,float bat_volts) {
+    field1 = String(tempC,2);
+    field2 = String(humidityRH,2);
+    field3 = String(light,2);
+    field4 = String(soilMoisture,2);
+    field5 = String(rainToday_mm,2);
+    field6 = String(wind_mps,2);
+    field7 = String(wind_gust,2);
+    field8 = String(bat_volts,2);
 
     String TSjson;
     createThinkSpeakjson(TSjson);
@@ -661,7 +672,7 @@ void publishToWUndergroundRain(float temp,float humidityRH,float wind,float wind
     // Be sure units align with the webhook!
     dateutc = String("now");
     tempf = String(temp,2);
-    humidity_wu = String(humidityRH,2);
+    humidity = String(humidityRH,2);
     windspeedmph = String(wind,2);
     windgustmph = String(windGust,2);
     float rainRateMultiplier = 60 / (publishPeriod/60); // WUnderground asks for hourly rate - this variable extrapolates so hourly rate can be reported based on the chosen publishPeriod
@@ -677,7 +688,7 @@ void publishToWUndergroundNoRain(float temp,float humidityRH,float wind,float wi
     // Be sure units align with the webhook!
     dateutc = String("now");
     tempf = String(temp,2);
-    humidity_wu = String(humidityRH,2);
+    humidity = String(humidityRH,2);
     windspeedmph = String(wind,2);
     windgustmph = String(windGust,2);
 
@@ -689,29 +700,29 @@ void publishToWUndergroundNoRain(float temp,float humidityRH,float wind,float wi
 void createThinkSpeakjson(String &dest) {
     // dest = "{ \"k\":\"" + api_key + "\", \"1\":\""+ field1 +"\", \"2\":\""+ field2 +"\",\"3\":\""+ field3 +"\",\"4\":\""+ field4 +"\",\"5\":\""+ field5 +"\",\"6\":\""+ field6 +"\",\"7\":\""+ field7 +"\",\"8\":\""+ field8 +"\",\"a\":\""+ lat +"\",\"o\":\""+ lon +"\",\"e\":\""+ el +"\", \"s\":\""+ status +"\"}";
     dest = "{";
-    if(tempc.length()>0){
-        dest = dest + "\"1\":\""+ tempc +"\",";
+    if(field1.length()>0){
+        dest = dest + "\"1\":\""+ field1 +"\",";
     }
-    if(humidity_ts.length()>0){
-        dest = dest + "\"2\":\""+ humidity_ts +"\",";
+    if(field2.length()>0){
+        dest = dest + "\"2\":\""+ field2 +"\",";
     }
-    if(lightrel.length()>0){
-        dest = dest + "\"3\":\""+ lightrel +"\",";
+    if(field3.length()>0){
+        dest = dest + "\"3\":\""+ field3 +"\",";
     }
-    if(soilmoisture.length()>0){
-        dest = dest + "\"4\":\""+ soilmoisture +"\",";
+    if(field4.length()>0){
+        dest = dest + "\"4\":\""+ field4 +"\",";
     }
-    if(dailyrainmm.length()>0){
-        dest = dest + "\"5\":\""+ dailyrainmm +"\",";
+    if(field5.length()>0){
+        dest = dest + "\"5\":\""+ field5 +"\",";
     }
-    if(windspeedmps.length()>0){
-        dest = dest + "\"6\":\""+ windspeedmps +"\",";
+    if(field6.length()>0){
+        dest = dest + "\"6\":\""+ field6 +"\",";
     }
-    if(windgustmps.length()>0){
-        dest = dest + "\"7\":\""+ windgustmps +"\",";
+    if(field7.length()>0){
+        dest = dest + "\"7\":\""+ field7 +"\",";
     }
-    if(volts.length()>0){
-        dest = dest + "\"8\":\""+ volts +"\",";
+    if(field8.length()>0){
+        dest = dest + "\"8\":\""+ field8 +"\",";
     }
     if(status.length()>0){
         dest = dest + "\"s\":\""+ status +"\",";
@@ -724,8 +735,8 @@ void createWUndergroundjsonRain(String &dest) {
     if(tempf.length()>0){
         dest = dest + "\"1\":\""+ tempf +"\",";
     }
-    if(humidity_wu.length()>0){
-        dest = dest + "\"2\":\""+ humidity_wu +"\",";
+    if(humidity.length()>0){
+        dest = dest + "\"2\":\""+ humidity +"\",";
     }
     if(windspeedmph.length()>0){
         dest = dest + "\"3\":\""+ windspeedmph +"\",";
@@ -754,8 +765,8 @@ void createWUndergroundjsonNoRain(String &dest) {
     if(tempf.length()>0){
         dest = dest + "\"1\":\""+ tempf +"\",";
     }
-    if(humidity_wu.length()>0){
-        dest = dest + "\"2\":\""+ humidity_wu +"\",";
+    if(humidity.length()>0){
+        dest = dest + "\"2\":\""+ humidity +"\",";
     }
     if(windspeedmph.length()>0){
         dest = dest + "\"3\":\""+ windspeedmph +"\",";
