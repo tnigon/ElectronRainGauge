@@ -1,0 +1,664 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:weather_station-cache
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Particle_Electron U2
+U 1 1 5A97E802
+P 5550 3250
+F 0 "U2" H 5550 3150 50  0000 C CNN
+F 1 "Particle_Electron" H 5550 3350 50  0000 C CNN
+F 2 "modules:Particle_Electron" H 5550 3250 50  0001 C CNN
+F 3 "DOCUMENTATION" H 5550 3250 50  0001 C CNN
+	1    5550 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Screw_Terminal_01x04 J2
+U 1 1 5A97E84F
+P 3250 2250
+F 0 "J2" H 3250 2450 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 3250 1950 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 3250 2250 50  0001 C CNN
+F 3 "" H 3250 2250 50  0001 C CNN
+	1    3250 2250
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Conn_01x18 J3
+U 1 1 5A97E892
+P 4600 3200
+F 0 "J3" H 4600 4100 50  0000 C CNN
+F 1 "Conn_01x18" H 4600 2200 50  0000 C CNN
+F 2 "connectors:Pin_Header_Straight_1x18_Pitch2.54mm" H 4600 3200 50  0001 C CNN
+F 3 "" H 4600 3200 50  0001 C CNN
+	1    4600 3200
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	4400 2700 5000 2700
+Wire Wire Line
+	4800 2800 5000 2800
+Wire Wire Line
+	5000 2900 4800 2900
+Wire Wire Line
+	4800 3000 5000 3000
+Wire Wire Line
+	4450 3100 5000 3100
+Wire Wire Line
+	4450 3300 5000 3300
+Wire Wire Line
+	4450 3400 5000 3400
+Wire Wire Line
+	4450 3500 5000 3500
+Wire Wire Line
+	4800 3600 5000 3600
+Wire Wire Line
+	5000 3700 4800 3700
+Wire Wire Line
+	4800 3800 5000 3800
+Wire Wire Line
+	5000 3900 4800 3900
+Wire Wire Line
+	4800 4000 5000 4000
+Wire Wire Line
+	5000 4100 4800 4100
+Wire Wire Line
+	4200 2600 5000 2600
+Wire Wire Line
+	4450 2500 5000 2500
+Wire Wire Line
+	4250 2400 5000 2400
+$Comp
+L GND #PWR01
+U 1 1 5A97EA8A
+P 4450 2500
+F 0 "#PWR01" H 4450 2250 50  0001 C CNN
+F 1 "GND" H 4450 2350 50  0000 C CNN
+F 2 "" H 4450 2500 50  0001 C CNN
+F 3 "" H 4450 2500 50  0001 C CNN
+	1    4450 2500
+	0    1    1    0   
+$EndComp
+Connection ~ 4800 2500
+Connection ~ 4800 2400
+Text Label 4250 2400 2    60   ~ 0
+VIN
+Text Label 3500 2150 0    60   ~ 0
+VIN
+$Comp
+L GND #PWR02
+U 1 1 5A97EB15
+P 3700 2250
+F 0 "#PWR02" H 3700 2000 50  0001 C CNN
+F 1 "GND" H 3700 2100 50  0000 C CNN
+F 2 "" H 3700 2250 50  0001 C CNN
+F 3 "" H 3700 2250 50  0001 C CNN
+	1    3700 2250
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3450 2250 3700 2250
+Wire Wire Line
+	3500 2150 3450 2150
+Text Label 4200 2600 2    60   ~ 0
+TX
+Text Label 4400 2700 2    60   ~ 0
+RX
+Connection ~ 4800 2700
+Connection ~ 4800 2600
+Text Label 3600 2350 0    60   ~ 0
+TX
+Wire Wire Line
+	3600 2350 3450 2350
+Text Label 3700 2450 0    60   ~ 0
+RX
+Wire Wire Line
+	3700 2450 3450 2450
+$Comp
+L Conn_01x18 J6
+U 1 1 5A97EC86
+P 6500 3200
+F 0 "J6" H 6500 4100 50  0000 C CNN
+F 1 "Conn_01x18" H 6500 2200 50  0000 C CNN
+F 2 "connectors:Pin_Header_Straight_1x18_Pitch2.54mm" H 6500 3200 50  0001 C CNN
+F 3 "" H 6500 3200 50  0001 C CNN
+	1    6500 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6100 2400 6650 2400
+Wire Wire Line
+	6100 2500 6300 2500
+Wire Wire Line
+	6300 2600 6100 2600
+Wire Wire Line
+	6300 2800 6100 2800
+Wire Wire Line
+	6100 2900 6300 2900
+Wire Wire Line
+	6100 3000 6650 3000
+Wire Wire Line
+	6100 3100 6650 3100
+Wire Wire Line
+	6100 3200 6650 3200
+Wire Wire Line
+	6100 3300 6650 3300
+Wire Wire Line
+	6300 3400 6100 3400
+Wire Wire Line
+	6100 3500 6300 3500
+Wire Wire Line
+	6100 3600 6650 3600
+Wire Wire Line
+	6100 3700 6650 3700
+Wire Wire Line
+	6300 3800 6100 3800
+Wire Wire Line
+	6100 3900 6300 3900
+Wire Wire Line
+	6100 4000 6750 4000
+Wire Wire Line
+	6100 4100 6850 4100
+$Comp
+L Openlog U3
+U 1 1 5A9882AD
+P 6100 5450
+F 0 "U3" H 6100 5350 50  0000 C CNN
+F 1 "Openlog" H 6100 5550 50  0000 C CNN
+F 2 "modules:Openlog" H 6100 5450 50  0001 C CNN
+F 3 "DOCUMENTATION" H 6130 5130 50  0001 C CNN
+	1    6100 5450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Screw_Terminal_01x04 J5
+U 1 1 5AA2F863
+P 6200 1600
+F 0 "J5" H 6200 1800 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 6200 1300 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 6200 1600 50  0001 C CNN
+F 3 "" H 6200 1600 50  0001 C CNN
+	1    6200 1600
+	1    0    0    -1  
+$EndComp
+Text Label 6650 2400 0    60   ~ 0
+3V3
+Connection ~ 6300 2400
+Text Label 5900 1500 2    60   ~ 0
+3V3
+Wire Wire Line
+	6100 2700 6650 2700
+$Comp
+L GND #PWR03
+U 1 1 5AA2F97E
+P 6650 2700
+F 0 "#PWR03" H 6650 2450 50  0001 C CNN
+F 1 "GND" H 6650 2550 50  0000 C CNN
+F 2 "" H 6650 2700 50  0001 C CNN
+F 3 "" H 6650 2700 50  0001 C CNN
+	1    6650 2700
+	0    -1   -1   0   
+$EndComp
+Connection ~ 6300 2700
+Wire Wire Line
+	6000 1500 5900 1500
+Text Label 6100 4800 2    60   ~ 0
+3V3
+Wire Wire Line
+	6100 4800 6100 4900
+$Comp
+L GND #PWR04
+U 1 1 5AA2FB2D
+P 5500 5750
+F 0 "#PWR04" H 5500 5500 50  0001 C CNN
+F 1 "GND" H 5500 5600 50  0000 C CNN
+F 2 "" H 5500 5750 50  0001 C CNN
+F 3 "" H 5500 5750 50  0001 C CNN
+	1    5500 5750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5550 5700 5500 5700
+Wire Wire Line
+	5500 5600 5500 5750
+Wire Wire Line
+	5550 5600 5500 5600
+Connection ~ 5500 5700
+Text Label 6750 4000 0    60   ~ 0
+TO_LOG
+Text Label 6850 4100 0    60   ~ 0
+FROM_LOG
+Connection ~ 6300 4000
+Connection ~ 6300 4100
+Text Label 5400 5400 2    60   ~ 0
+FROM_LOG
+Text Label 5400 5300 2    60   ~ 0
+TO_LOG
+NoConn ~ 5550 5200
+Wire Wire Line
+	5400 5400 5550 5400
+Wire Wire Line
+	5550 5300 5400 5300
+Wire Wire Line
+	6000 1600 5950 1600
+Wire Wire Line
+	5950 1500 5950 1800
+Connection ~ 5950 1500
+Wire Wire Line
+	5950 1700 6000 1700
+Connection ~ 5950 1600
+Wire Wire Line
+	5950 1800 6000 1800
+Connection ~ 5950 1700
+$Comp
+L Screw_Terminal_01x04 J4
+U 1 1 5AA2FEA9
+P 5300 1600
+F 0 "J4" H 5300 1800 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 5300 1300 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 5300 1600 50  0001 C CNN
+F 3 "" H 5300 1600 50  0001 C CNN
+	1    5300 1600
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR05
+U 1 1 5AA2FED2
+P 4950 1500
+F 0 "#PWR05" H 4950 1250 50  0001 C CNN
+F 1 "GND" H 4950 1350 50  0000 C CNN
+F 2 "" H 4950 1500 50  0001 C CNN
+F 3 "" H 4950 1500 50  0001 C CNN
+	1    4950 1500
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	4950 1500 5100 1500
+Wire Wire Line
+	5100 1600 5000 1600
+Wire Wire Line
+	5000 1500 5000 1800
+Connection ~ 5000 1500
+Wire Wire Line
+	5000 1700 5100 1700
+Connection ~ 5000 1600
+Wire Wire Line
+	5000 1800 5100 1800
+Connection ~ 5000 1700
+Text Label 4450 3100 2    60   ~ 0
+SOLAR_RAD
+Text Label 4450 3300 2    60   ~ 0
+ANEMOMETER
+Text Label 4450 3400 2    60   ~ 0
+PHOTO_R
+Connection ~ 4800 3400
+Connection ~ 4800 3300
+Connection ~ 4800 3100
+$Comp
+L Screw_Terminal_01x04 J1
+U 1 1 5AA302B5
+P 2450 3200
+F 0 "J1" H 2450 3400 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 2450 2900 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 2450 3200 50  0001 C CNN
+F 3 "" H 2450 3200 50  0001 C CNN
+	1    2450 3200
+	-1   0    0    -1  
+$EndComp
+Text Label 2700 3100 0    60   ~ 0
+SOLAR_RAD
+Text Label 2800 3300 0    60   ~ 0
+ANEMOMETER
+Text Label 3100 3400 0    60   ~ 0
+PHOTO_R
+Wire Wire Line
+	2800 3300 2650 3300
+Wire Wire Line
+	2750 3200 2650 3200
+Wire Wire Line
+	2700 3100 2650 3100
+Wire Wire Line
+	2650 3400 3100 3400
+$Comp
+L R_0.25W R_PHOTO_R1
+U 1 1 5AA305EE
+P 3050 3650
+F 0 "R_PHOTO_R1" V 3130 3650 50  0000 C CNN
+F 1 "10K" V 2970 3650 50  0000 C CNN
+F 2 "passives:R_TH_0.25W_400mil" V 2980 3650 50  0001 C CNN
+F 3 "" H 3050 3650 50  0001 C CNN
+	1    3050 3650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3050 3500 3050 3400
+Connection ~ 3050 3400
+$Comp
+L GND #PWR06
+U 1 1 5AA306F9
+P 3050 3850
+F 0 "#PWR06" H 3050 3600 50  0001 C CNN
+F 1 "GND" H 3050 3700 50  0000 C CNN
+F 2 "" H 3050 3850 50  0001 C CNN
+F 3 "" H 3050 3850 50  0001 C CNN
+	1    3050 3850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3050 3850 3050 3800
+Text Label 6650 3700 0    60   ~ 0
+SDA
+Text Label 6650 3600 0    60   ~ 0
+SCL
+Connection ~ 6300 3600
+Connection ~ 6300 3700
+Wire Wire Line
+	4450 3200 5000 3200
+Text Label 6650 3300 0    60   ~ 0
+REED_SW
+Text Label 6650 3200 0    60   ~ 0
+D3
+Text Label 6650 3100 0    60   ~ 0
+SOIL_T
+Text Label 6650 3000 0    60   ~ 0
+T_RH
+Connection ~ 6300 3000
+Connection ~ 6300 3100
+Connection ~ 6300 3200
+Connection ~ 6300 3300
+$Comp
+L Screw_Terminal_01x04 J7
+U 1 1 5AA31053
+P 8150 3100
+F 0 "J7" H 8150 3300 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 8150 2800 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 8150 3100 50  0001 C CNN
+F 3 "" H 8150 3100 50  0001 C CNN
+	1    8150 3100
+	1    0    0    -1  
+$EndComp
+Text Label 7500 3300 2    60   ~ 0
+REED_SW
+Wire Wire Line
+	7500 3300 7950 3300
+$Comp
+L R_0.25W R_REED1
+U 1 1 5AA3111F
+P 7600 3550
+F 0 "R_REED1" V 7680 3550 50  0000 C CNN
+F 1 "200R" V 7520 3550 50  0000 C CNN
+F 2 "passives:R_TH_0.25W_400mil" V 7530 3550 50  0001 C CNN
+F 3 "" H 7600 3550 50  0001 C CNN
+	1    7600 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR07
+U 1 1 5AA3114E
+P 7600 3800
+F 0 "#PWR07" H 7600 3550 50  0001 C CNN
+F 1 "GND" H 7600 3650 50  0000 C CNN
+F 2 "" H 7600 3800 50  0001 C CNN
+F 3 "" H 7600 3800 50  0001 C CNN
+	1    7600 3800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7600 3800 7600 3700
+Wire Wire Line
+	7600 3400 7600 3300
+Connection ~ 7600 3300
+Wire Wire Line
+	7850 3200 7950 3200
+Text Label 7700 3100 2    60   ~ 0
+SOIL_T
+Wire Wire Line
+	7700 3100 7950 3100
+Text Label 7550 3000 2    60   ~ 0
+T_RH
+Wire Wire Line
+	7550 3000 7950 3000
+$Comp
+L R_0.25W R_TRH1
+U 1 1 5AA31464
+P 7650 2700
+F 0 "R_TRH1" V 7730 2700 50  0000 C CNN
+F 1 "10k" V 7570 2700 50  0000 C CNN
+F 2 "passives:R_TH_0.25W_400mil" V 7580 2700 50  0001 C CNN
+F 3 "" H 7650 2700 50  0001 C CNN
+	1    7650 2700
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_0.25W R_SOIL1
+U 1 1 5AA314A1
+P 7900 2700
+F 0 "R_SOIL1" V 7980 2700 50  0000 C CNN
+F 1 "4k7" V 7820 2700 50  0000 C CNN
+F 2 "passives:R_TH_0.25W_400mil" V 7830 2700 50  0001 C CNN
+F 3 "" H 7900 2700 50  0001 C CNN
+	1    7900 2700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7650 2850 7650 3000
+Connection ~ 7650 3000
+Text Label 7800 2400 0    60   ~ 0
+3V3
+Wire Wire Line
+	7800 2400 7800 2500
+Wire Wire Line
+	7650 2500 7900 2500
+Wire Wire Line
+	7900 2500 7900 2550
+Wire Wire Line
+	7650 2500 7650 2550
+Connection ~ 7800 2500
+Text Notes 7050 7000 0    60   ~ 0
+UMN BBE IRG Weather Station\nDesign by Tyler Nigon\nSchematic capture by Daniel Furuta\nrev 1 March 2018
+$Comp
+L PWR_FLAG #FLG08
+U 1 1 5AA31DF0
+P 6200 2300
+F 0 "#FLG08" H 6200 2375 50  0001 C CNN
+F 1 "PWR_FLAG" H 6200 2450 50  0000 C CNN
+F 2 "" H 6200 2300 50  0001 C CNN
+F 3 "" H 6200 2300 50  0001 C CNN
+	1    6200 2300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6200 2300 6200 2400
+Connection ~ 6200 2400
+$Comp
+L PWR_FLAG #FLG09
+U 1 1 5AA31EB0
+P 4900 2300
+F 0 "#FLG09" H 4900 2375 50  0001 C CNN
+F 1 "PWR_FLAG" H 4900 2450 50  0000 C CNN
+F 2 "" H 4900 2300 50  0001 C CNN
+F 3 "" H 4900 2300 50  0001 C CNN
+	1    4900 2300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4900 2300 4900 2400
+Connection ~ 4900 2400
+$Comp
+L PWR_FLAG #FLG010
+U 1 1 5AA3204B
+P 4950 4650
+F 0 "#FLG010" H 4950 4725 50  0001 C CNN
+F 1 "PWR_FLAG" H 4950 4800 50  0000 C CNN
+F 2 "" H 4950 4650 50  0001 C CNN
+F 3 "" H 4950 4650 50  0001 C CNN
+	1    4950 4650
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR011
+U 1 1 5AA3207B
+P 4950 4750
+F 0 "#PWR011" H 4950 4500 50  0001 C CNN
+F 1 "GND" H 4950 4600 50  0000 C CNN
+F 2 "" H 4950 4750 50  0001 C CNN
+F 3 "" H 4950 4750 50  0001 C CNN
+	1    4950 4750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4950 4750 4950 4650
+$Comp
+L Logo_Open_Hardware_Small #LOGO1
+U 1 1 5AA322FD
+P 7950 5500
+F 0 "#LOGO1" H 7950 5775 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 7950 5275 50  0001 C CNN
+F 2 "" H 7950 5500 50  0001 C CNN
+F 3 "" H 7950 5500 50  0001 C CNN
+	1    7950 5500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mounting_Hole_PAD MK1
+U 1 1 5AA32357
+P 7600 4550
+F 0 "MK1" H 7600 4800 50  0000 C CNN
+F 1 "Mounting_Hole_PAD" H 7600 4725 50  0000 C CNN
+F 2 "mechanical:MountingHole_3mm_Pad" H 7600 4550 50  0001 C CNN
+F 3 "" H 7600 4550 50  0001 C CNN
+	1    7600 4550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mounting_Hole_PAD MK3
+U 1 1 5AA3239B
+P 8350 4550
+F 0 "MK3" H 8350 4800 50  0000 C CNN
+F 1 "Mounting_Hole_PAD" H 8350 4725 50  0000 C CNN
+F 2 "mechanical:MountingHole_3mm_Pad" H 8350 4550 50  0001 C CNN
+F 3 "" H 8350 4550 50  0001 C CNN
+	1    8350 4550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mounting_Hole_PAD MK2
+U 1 1 5AA323F7
+P 7600 5000
+F 0 "MK2" H 7600 5250 50  0000 C CNN
+F 1 "Mounting_Hole_PAD" H 7600 5175 50  0000 C CNN
+F 2 "mechanical:MountingHole_3mm_Pad" H 7600 5000 50  0001 C CNN
+F 3 "" H 7600 5000 50  0001 C CNN
+	1    7600 5000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mounting_Hole_PAD MK4
+U 1 1 5AA32454
+P 8350 5000
+F 0 "MK4" H 8350 5250 50  0000 C CNN
+F 1 "Mounting_Hole_PAD" H 8350 5175 50  0000 C CNN
+F 2 "mechanical:MountingHole_3mm_Pad" H 8350 5000 50  0001 C CNN
+F 3 "" H 8350 5000 50  0001 C CNN
+	1    8350 5000
+	1    0    0    -1  
+$EndComp
+NoConn ~ 7600 4650
+NoConn ~ 8350 4650
+NoConn ~ 8350 5100
+NoConn ~ 7600 5100
+Wire Wire Line
+	7900 2850 7900 3100
+Connection ~ 7900 3100
+Text Label 4450 3200 2    60   ~ 0
+WATERMARK
+Connection ~ 4800 3200
+Text Label 2750 3200 0    60   ~ 0
+WATERMARK
+$Comp
+L Screw_Terminal_01x04 J8
+U 1 1 5AA6F0E9
+P 4400 5150
+F 0 "J8" H 4400 5350 50  0000 C CNN
+F 1 "Screw_Terminal_01x04" H 4400 4850 50  0000 C CNN
+F 2 "connectors:TerminalBlock_04x3.5mm_Straight" H 4400 5150 50  0001 C CNN
+F 3 "" H 4400 5150 50  0001 C CNN
+	1    4400 5150
+	1    0    0    -1  
+$EndComp
+Text Label 4100 5150 2    60   ~ 0
+SCL
+Text Label 4100 5250 2    60   ~ 0
+SDA
+$Comp
+L GND #PWR012
+U 1 1 5AA6F1C2
+P 3900 5350
+F 0 "#PWR012" H 3900 5100 50  0001 C CNN
+F 1 "GND" H 3900 5200 50  0000 C CNN
+F 2 "" H 3900 5350 50  0001 C CNN
+F 3 "" H 3900 5350 50  0001 C CNN
+	1    3900 5350
+	0    1    1    0   
+$EndComp
+Text Label 3900 5050 2    60   ~ 0
+3V3
+Wire Wire Line
+	3900 5050 4200 5050
+Wire Wire Line
+	4100 5150 4200 5150
+Wire Wire Line
+	4200 5250 4100 5250
+Wire Wire Line
+	3900 5350 4200 5350
+Text Label 4450 3500 2    60   ~ 0
+WIND_DIR
+Connection ~ 4800 3500
+Text Label 7850 3200 2    60   ~ 0
+WIND_DIR
+$EndSCHEMATC
