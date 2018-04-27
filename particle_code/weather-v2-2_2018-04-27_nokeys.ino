@@ -10,7 +10,7 @@
 // #include <ParticleSoftSerial.h>
 #include "Serial5/Serial5.h"
 
-// Updated: 26 April 2018
+// Updated: 27 April 2018
 // Author: Tyler J. Nigon
 // Version 2.2
 
@@ -18,7 +18,7 @@
 // Global user parameters
 // ============================================================
 // ****** Time ******
-boolean daylight_savings = false; // DST begins in spring and ends in fall
+boolean daylight_savings = true; // DST begins in spring and ends in fall
 int gmt_timeZone = -6; // Change to appropriate time zone for your device
 unsigned int sensorCapturePeriod = (5); // units are seconds
 unsigned int publishPeriod = (60*10);  // units are seconds
@@ -35,7 +35,7 @@ boolean sense_soiltemp = true; // soil temperature sensor
 boolean sense_solrad = true; // LI-200R pyranometer
 
 // ****** Publishing ******
-// ** If publishing via webhook, be sure channel, key/pw, name and number of variables are correct ** 
+// ** If publishing via webhook, be sure channel, key/pw, name and number of variables are correct **
 boolean publish_particle = false;
 boolean publish_thingspeak = true;
 unsigned long thingspeakChannelNumber = 123456;
@@ -89,9 +89,9 @@ float dilToday = 0; // Daily Integrated Light (mol / m2 / day); resets at midnig
 float lux2par = (1/54);
 float dil_conversion = lux2par * (1/1000000) * (sensorCapturePeriod); // lux to par and micromoles to moles and seconds to "sensorCapturePeriod" (e.g., 5 seconds)
 float solrad_offset = 2; // determine offset by disconnecting sensor from voltage amplifier and monitor voltage output
-float solrad_gain = 0.05;
+float solrad_gain = 0.05;  // units of V per microamp
 float solrad_const = 62.28; // units of microamps per 1000 watts per m2 (this calibration constant comes from the Li-Cor certificate of calibration)
-float solrad_conversion = 1/(solrad_gain * solrad_const); // in units of W m-2 V-1
+float solrad_conversion = 1/(solrad_gain * solrad_const); // in units of kW m-2 V-1 --> use this to directly convert voltage output to W m-2
 // ============================================================
 
 // ============================================================
@@ -265,7 +265,7 @@ void loop() {
         if (sense_wind == true) {
             captureWind();
         }
-        
+
         if (sense_solrad = true) {
             capture_sol_rad();
         }
@@ -338,7 +338,7 @@ void loop() {
                 windGust_mph = (wind_gust * 2.23694);
             }
         }
-        
+
         float rain_mm;
         float rainToday_mm;
         float rain_in;
@@ -349,7 +349,7 @@ void loop() {
             rain_in = (rain_mm * 0.0393701);
             rainToday_in = (rainToday_mm * 0.0393701);
         }
-        
+
         float wind_dir;
         if (sense_dir == true) {
             wind_dir = getAndResetWindVaneDegrees();
@@ -358,8 +358,10 @@ void loop() {
         float sol_rad;
 //        float solrad_today;
         if (sense_solrad == true) {
-            sol_rad = (getAndResetSolrad() * sensorCapturePeriod); // multiply by capture period to integrate over time
-            solrad_today += (sol_rad / 1000); // convert watts m-2 s-1 to megajoules
+            // multiply by capture period to integrate over time
+            // convert kW m-2 (kJ s-1) to megajoules by dividing by 1000
+            sol_rad = (getAndResetSolrad() * sensorCapturePeriod) / 1000;
+            solrad_today += sol_rad;
         }
 
         FuelGauge fuel;
@@ -381,7 +383,6 @@ void loop() {
                 publishToParticle(temp_f,humidityRH,light,rainToday_in,wind_mph,windGust_mph,soil_temp_F);
             }
         }
-        // publishToParticle3(lux, lux_tot, lux_n); // Comment out if you don't want to publish to particle.io
         if (publish_thingspeak == true) {
             if (units_imperial == false) {
                 publishToThingSpeak(tempC,humidityRH,solrad_today,rainToday_mm,wind_mps,wind_gust,soil_temp_C,soilMoisture);
@@ -458,23 +459,19 @@ void test_sensors() {
         Particle.publish("Temp test (Celcius): ", String(temp_test));
         delay(100);
     }
-    
+
     if (sense_photo == true) {
         unsigned int light_test;
         light_test = analogRead(light_sensor_pin);
         Particle.publish("Photoresistor test (raw int): ", String(light_test));
         delay(100);
     }
-    
+
     if (sense_tsl == true) {
         sensors_event_t event;
         tsl.getEvent(&event);
-        // sensor_t sensor;
-        // tsl.getSensor(&sensor);
         if (tsl.begin()) {
             float lux_test;
-            // sensors_event_t event;
-            // tsl.getEvent(&event);
             lux_test = event.light;
             Particle.publish("Lux test: ", String(lux_test));
             Serial.print(("Lux test: ")); Serial.println(lux_test);
@@ -493,17 +490,12 @@ void test_sensors() {
         Particle.publish("Wind test (raw int): ", String(wind_test));
         delay(100);
     }
-    
+
     if (sense_moist == true) {
         unsigned int soil_moist_test;
         soil_moist_test = analogRead(soil_moist_pin);
         Particle.publish("Soil matric tension test (raw int): ", String(soil_moist_test));
         delay(100);
-        
-        // int16_t soil_moist_test;
-        // soil_moist_test = (ads1115.readADC_SingleEnded(3)/float(10)); // Capture raw ADC reading
-        // Particle.publish("Soil moisture test (raw int): ", String(soil_moist_test));
-        // delay(100);
     }
 
     if (sense_soiltemp == true) {
@@ -516,20 +508,12 @@ void test_sensors() {
 
     if (sense_solrad == true) {
         float solrad_test;
-        solrad_test = (analogRead(solrad_sensor_pin) - solrad_offset) * solrad_conversion;
-        Particle.publish("Solar radiation test (w m-2): ", String(solrad_test));
+
+        solrad_test = ((((analogRead(solrad_sensor_pin) - solrad_offset) * 3.3) / 4096) * solrad_conversion) * 1000; // in unists of kW m-2 (kJ m-2 s-1)
+        // solrad_test = (analogRead(solrad_sensor_pin) - solrad_offset) * solrad_conversion;
+        Particle.publish("Solar radiation test (W m-2): ", String(solrad_test));
         delay(100);
         }
-        // if (ds18b20.read()) {
-        //     String soiltemp_id;
-        //     uint8_t addr[8];
-        //     ds18b20.addr(addr);
-        //     soiltemp_id = (String(addr[0]) + String(addr[1]) + String(addr[2]) + String(addr[3]) + String(addr[4]) + String(addr[5]) + String(addr[6]) + String(addr[7]));
-        //     Particle.publish("Waterproof temperature sensor ID: ", String(soiltemp_id));
-        // }
-        // else {
-        //     Particle.publish("Waterproof temperature test (C): ", String("No sensor found"));
-        // }
     }
 }
 
@@ -646,7 +630,7 @@ const long interval = 100; // interval at which to blink (milliseconds)
 unsigned long lastRainEvent = 0; // Use "unsigned long" for variables that hold time
 void blinkLight() {
   unsigned long currentMillis = millis();
-  
+
     if (currentMillis - lastRainEvent < interval) {
         ledState = HIGH;
         digitalWrite(led, ledState);
@@ -749,19 +733,25 @@ float getAndResetLight() {
     return result;
 }
 
-float solrad_read;
-unsigned int solradReadingCount = 0;
+int solrad_read;
+float solrad_voltage = 0; //Variable that stores the voltage (in Volts) from the pyranometer being sent to the analog pin
+float solrad; // units of kJ s-1 (must be integrated over time yet)
 float solradTotal = 0.0;
+unsigned int solradReadingCount = 0;
 void capture_sol_rad() {
-    solrad_read = (analogRead(solrad_sensor_pin) - solrad_offset) * solrad_conversion;
-    solradTotal += solrad_read;
+    // solrad_read = (analogRead(solrad_sensor_pin) - solrad_offset) * solrad_conversion;
+    solrad_read = analogRead(solrad_sensor_pin) - solrad_offset;
+    solrad_voltage = (solrad_read * 3.3) / 4096; // Convert sensor value to actual voltage
+    solrad = solrad_voltage*solrad_conversion; // in unists of kW m-2 (kJ m-2 s-1)
+    solradTotal += solrad;
     solradReadingCount++;
 }
 float getAndResetSolrad() {
     if(solradReadingCount == 0) {
         return -1;
     }
-    float result = (float(solradTotal)/float(solradReadingCount));
+    // float result = (float(solradTotal)/float(solradReadingCount));
+    float result = solradTotal;
     solradTotal = 0.0;
     solradReadingCount = 0;
     if (result < 0) {
@@ -945,9 +935,9 @@ float windSpeedMax = 70; // Wind speed (m/s) corresponding to maximum voltage
 
 void captureWind() {
     wind_read = analogRead(anemometerPin); // Get 12-bit integer from the analog pin connected to the anemometer
-    sensorVoltage = (wind_read * 3.3) / 4095; // Convert sensor value to actual voltage
+    sensorVoltage = (wind_read * 3.3) / 4096; // Convert sensor value to actual voltage
     // sensorVoltage = (wind_read * 3.3 * voltageConversionConstant) / 4095; // Convert sensor value to actual voltage
-    if (sensorVoltage < voltageMin) { 
+    if (sensorVoltage < voltageMin) {
         sensorVoltage = voltageMin; // Check if voltage is below minimum value. If so, set to minimum
     }
     windTotal += sensorVoltage;
@@ -1110,19 +1100,19 @@ void publishToSD(time_t scheduledPublish,float temp,float humidityRH,float light
 
 // void publishToParticle(float tempC, float humidityRH, float lux, float rain_mm, float wind_mps, float wind_gust) {
 //     Particle.publish("Weather",
-//                         String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.2f mm, %0.1f mps, %0.1f mps", 
+//                         String::format("%0.2f°C, %0.2f%%, %0.2f%%, %0.2f mm, %0.1f mps, %0.1f mps",
 //                             tempC,humidityRH,lux,rain_mm,wind_mps,wind_gust),60,PRIVATE);
 // }
 
 void publishToParticle(float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
     Particle.publish("Weather",
-                        String::format("1: %0.2f, 2: %0.2f, 3: %0.2f, 4: %0.2f, 5: %0.2f, 6: %0.2f, 7: %0.2f", 
+                        String::format("1: %0.2f, 2: %0.2f, 3: %0.2f, 4: %0.2f, 5: %0.2f, 6: %0.2f, 7: %0.2f",
                             var1,var2,var3,var4,var5,var6,var7),60,PRIVATE);
 }
 
 void publishToParticle3(float var1, float var2, float var3) {
     Particle.publish("Weather",
-                        String::format("%0.2f, %0.2f, %0.2f", 
+                        String::format("%0.2f, %0.2f, %0.2f",
                             var1,var2,var3),60,PRIVATE);
 }
 
@@ -1160,7 +1150,7 @@ void publishToWUndergroundRain(float var1,float var2,float var3,float var4,float
     field3 = String(var3,2);
     field4 = String(var4,2);
     field5 = String(var5,2);
-    float rainRateMultiplier = 60 / (publishPeriod/60); // WUnderground asks for hourly rate - this variable extrapolates so hourly rate can be reported based on the chosen publishPeriod 
+    float rainRateMultiplier = 60 / (publishPeriod/60); // WUnderground asks for hourly rate - this variable extrapolates so hourly rate can be reported based on the chosen publishPeriod
     field6 = String(var6*rainRateMultiplier,2);
     field7 = String(var7,2);
     String WUrain_json;
